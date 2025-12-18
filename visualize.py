@@ -98,7 +98,6 @@ if __name__ == "__main__":
     if not isfile(dataset):
         raise FileNotFoundError(f"The file {dataset} does not exist")
     df = pd.read_csv(dataset, header=None).dropna()
-    # supprimer la premiere colonne
     df = df.drop(columns=[0])
     # print(df)
     # boxplot(df)
