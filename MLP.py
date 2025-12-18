@@ -52,21 +52,21 @@ class MLP:
         batch_size = outputs.shape[0]
         
         # Gradient of loss w.r.t output
-        grad_output = outputs - expected  # (batch_size, 2)
+        grad_output = outputs - expected
         
         # Gradient for hidden->output weights
-        grad_hidden_output = np.dot(self.second_hidden_activation.T, grad_output) / batch_size  # (30, 2)
+        grad_hidden_output = np.dot(self.second_hidden_activation.T, grad_output) / batch_size 
         
         # Backprop to second hidden layer
-        error_second_hidden = np.dot(grad_output, self.hidden_output_weights.T)  # (batch_size, 30)
-        grad_second_hidden = error_second_hidden * self.sigmoid(self.second_hidden_activation, derivative=True)  # (batch_size, 30)
+        error_second_hidden = np.dot(grad_output, self.hidden_output_weights.T)
+        grad_second_hidden = error_second_hidden * self.sigmoid(self.second_hidden_activation, derivative=True)
         
         # Gradient for first_hidden->second_hidden weights
-        grad_hidden_hidden = np.dot(self.first_hidden_activation.T, grad_second_hidden) / batch_size  # (60, 30)
+        grad_hidden_hidden = np.dot(self.first_hidden_activation.T, grad_second_hidden) / batch_size  
         
         # Backprop to first hidden layer
-        error_first_hidden = np.dot(grad_second_hidden, self.hidden_hidden_weights.T)  # (batch_size, 60)
-        grad_first_hidden = error_first_hidden * self.sigmoid(self.first_hidden_activation, derivative=True)  # (batch_size, 60)
+        error_first_hidden = np.dot(grad_second_hidden, self.hidden_hidden_weights.T)  
+        grad_first_hidden = error_first_hidden * self.sigmoid(self.first_hidden_activation, derivative=True)  
         
         # Gradient for input->first_hidden weights
         grad_input_hidden = np.dot(self.inputs.T, grad_first_hidden) / batch_size

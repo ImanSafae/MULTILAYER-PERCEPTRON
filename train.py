@@ -3,6 +3,7 @@ import pandas as pd
 from MLP import MLP
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 def interpret_proba(probas):
     predictions = []
@@ -28,6 +29,22 @@ def compute_accuracy(predicted, expected):
             accurates += 1
     percentage = accurates * 100 / total
     return percentage
+
+def export_weights_and_biases(mlp: MLP, folder_name: str):
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+    i = 0
+    np.savetxt(f"{folder_name}/weights_{i}.csv", mlp.input_hidden_weights, delimiter=',')
+    i += 1
+    np.savetxt(f"{folder_name}/weights_{i}.csv", mlp.hidden_hidden_weights, delimiter=',')
+    i += 1
+    np.savetxt(f"{folder_name}/weights_{i}.csv", mlp.hidden_output_weights, delimiter=',')
+    i = 0
+    np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.first_hidden_biases, delimiter=',')
+    i += 1
+    np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.second_hidden_biases, delimiter=',')
+    i += 1
+    np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.final_layer_biases, delimiter=',')
 
 
 def plot_all_metrics(val_accuracies, val_losses, accuracies, losses):
@@ -88,3 +105,4 @@ if __name__ == "__main__":
         if (i + 1) % 50 == 0:
             print(f"Epoch {i + 1}/{epochs} - Accuracy: {accuracy:.2f}% - Loss: {loss:.4f} - Val_Accuracy: {val_accuracy:.2f}% - Val_Loss: {val_loss:.4f}")
     plot_all_metrics(val_accuracies, val_losses, accuracies, losses)
+    export_weights_and_biases(mlp, "model")
