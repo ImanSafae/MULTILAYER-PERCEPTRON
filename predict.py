@@ -11,8 +11,14 @@ def preprocess_data(dataset):
     dataset = standardize_dataset(dataset, StandardScaler())
     return dataset
 
-def parse_weights_and_biases(model_folder: str, weights, biases):
+def parse_weights_and_biases(model_folder: str, weights, biases, hidden_layers_nb):
     files = [file for file in os.listdir(model_folder) if os.path.isfile(f"{model_folder}/{file}")]
+    config_path = f"{model_folder}/config.txt"
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            hidden_layers_nb = int(float(f.read().strip()))
+    else:
+        hidden_layers_nb = 2
     # print("files in model folder:", files)
     for file in files:
         if file.startswith("weights_"):
@@ -20,14 +26,22 @@ def parse_weights_and_biases(model_folder: str, weights, biases):
         if file.startswith("biases_"):
             biases.append(f"{model_folder}/{file}")
 
-def init_mlp(input_size, weights, biases):
-    mlp = MLP(input_size, hidden_layers_nb=2, learning_rate=0.01)
-    mlp.input_hidden_weights =  np.loadtxt(weights[0], delimiter=',')
-    mlp.hidden_hidden_weights = np.loadtxt(weights[1], delimiter=',')
-    mlp.hidden_output_weights = np.loadtxt(weights[2], delimiter=',')
-    mlp.first_hidden_biases = np.loadtxt(biases[0], delimiter=',')
-    mlp.second_hidden_biases = np.loadtxt(biases[1], delimiter=',')
-    mlp.final_layer_biases = np.loadtxt(biases[2], delimiter=',')
+def init_mlp(input_size, weights, biases, hidden_layers_nb=2):
+    # Determine number of hidden layers based on number of weight files - 1 (last one is output)
+    # hidden_layers_nb = len(weights) - 1
+    mlp = MLP(input_size, hidden_layers_nb, learning_rate=0.01)
+    print("Initialized MLP with", hidden_layers_nb, "hidden layers.")
+    
+    # Load weights and biases for all layers
+    for i in range(len(weights)):
+        mlp.hidden_weights[i] = np.loadtxt(weights[i], delimiter=',')
+    
+    for i in range(len(biases)):
+        if i < hidden_layers_nb:
+            mlp.hidden_layers_biases[i] = np.loadtxt(biases[i], delimiter=',')
+        else:
+            mlp.final_layer_biases = np.loadtxt(biases[i], delimiter=',')
+    
     return mlp
 
 def parse_dataset(dataset):
@@ -80,7 +94,8 @@ if __name__ == "__main__":
         raise ValueError("The provided dataset file does not exist")
     weights = []
     biases = []
-    parse_weights_and_biases(model, weights, biases)
+    hidden_layers_nb = 0
+    parse_weights_and_biases(model, weights, biases, hidden_layers_nb)
     dataset, expected = parse_dataset(dataset)
     # print("weights:", weights)
     # print("biases:", biases)

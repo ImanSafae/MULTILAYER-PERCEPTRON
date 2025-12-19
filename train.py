@@ -33,18 +33,25 @@ def compute_accuracy(predicted, expected):
 def export_weights_and_biases(mlp: MLP, folder_name: str):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
-    i = 0
-    np.savetxt(f"{folder_name}/weights_{i}.csv", mlp.input_hidden_weights, delimiter=',')
-    i += 1
-    np.savetxt(f"{folder_name}/weights_{i}.csv", mlp.hidden_hidden_weights, delimiter=',')
-    i += 1
-    np.savetxt(f"{folder_name}/weights_{i}.csv", mlp.hidden_output_weights, delimiter=',')
-    i = 0
-    np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.first_hidden_biases, delimiter=',')
-    i += 1
-    np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.second_hidden_biases, delimiter=',')
-    i += 1
-    np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.final_layer_biases, delimiter=',')
+    nb_of_hidden_layers = mlp.hidden_layers_nb
+    np.savetxt(f"{folder_name}/config.txt", [nb_of_hidden_layers], delimiter=',')
+    
+    # Save all hidden layer weights and biases
+    for i in range(nb_of_hidden_layers):
+        np.savetxt(f"{folder_name}/weights_{i}.csv", mlp.hidden_weights[i], delimiter=',')
+        np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.hidden_layers_biases[i], delimiter=',')
+    
+    # Save output layer weights and biases
+    np.savetxt(f"{folder_name}/weights_{nb_of_hidden_layers}.csv", mlp.hidden_weights[nb_of_hidden_layers], delimiter=',')
+    np.savetxt(f"{folder_name}/biases_{nb_of_hidden_layers}.csv", mlp.final_layer_biases, delimiter=',')
+    # i += 1
+    # np.savetxt(f"{folder_name}/weights_{i}.csv", mlp.hidden_output_weights, delimiter=',')
+    # i = 0
+    # np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.first_hidden_biases, delimiter=',')
+    # i += 1
+    # np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.second_hidden_biases, delimiter=',')
+    # i += 1
+    # np.savetxt(f"{folder_name}/biases_{i}.csv", mlp.final_layer_biases, delimiter=',')
 
 
 def plot_all_metrics(val_accuracies, val_losses, accuracies, losses):
@@ -67,9 +74,11 @@ if __name__ == "__main__":
     parser = ArgumentParser(prog="Training", description="Training of a multilayer perceptron model")
     parser.add_argument("--train", help="a .csv preprocessed training dataset", required=True)
     parser.add_argument("--valid", help="a .csv preprocessed validation dataset", required=True)
+    parser.add_argument("--layers", help="number of hidden layers", type=int, default=2)
     args = parser.parse_args()
     train_dataset = args.train
     valid_dataset = args.valid
+    layers = args.layers
     train_dataset = pd.read_csv(train_dataset, header=None)
     valid_dataset = pd.read_csv(valid_dataset, header=None)
     expected_valid_dataset = valid_dataset[0].to_numpy()

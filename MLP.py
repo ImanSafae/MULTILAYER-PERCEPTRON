@@ -2,82 +2,121 @@ import numpy as np
 
 class MLP:
     input_size: int
-    first_hidden_size: int
-    second_hidden_size: int
+    hidden_layer_sizes: list[int]
+    # first_hidden_size: int
+    # second_hidden_size: int
     final_layer_size: int = 2
     hidden_layers_nb: int
 
     inputs: np.ndarray
-    first_hidden_activation: np.ndarray
-    second_hidden_activation: np.ndarray
+    hidden_layers_activations: list[np.ndarray]
     outputs: np.ndarray
 
-    input_hidden_weights: np.ndarray
-    hidden_hidden_weights: np.ndarray
-    hidden_output_weights: np.ndarray
-
-    first_hidden_biases: np.ndarray
-    second_hidden_biases: np.ndarray
+    hidden_weights: list[np.ndarray]
+    hidden_layers_biases: list[np.ndarray]
     final_layer_biases: np.ndarray
 
     learning_rate: float
 
 
     def __init__(self, input_size, hidden_layers_nb=2, learning_rate=0.01):
+        if hidden_layers_nb < 1:
+            raise ValueError("There must be at least one hidden layer")
         self.hidden_layers_nb = hidden_layers_nb
         self.learning_rate = learning_rate
         self.input_size = input_size
-        self.first_hidden_size = input_size * 2
-        self.second_hidden_size = input_size
+        
+        # Initialize lists
+        self.hidden_layer_sizes = []
+        self.hidden_weights = []
+        self.hidden_layers_biases = []
+        self.hidden_layers_activations = []
+        
+        # Define hidden layer sizes
+        self.hidden_layer_sizes.append(input_size * 2)
+        for i in range(1, hidden_layers_nb):
+            self.hidden_layer_sizes.append(input_size)
+        
         self.final_layer_size = 2
-        # Initialize weights and biases here
-        self.input_hidden_weights = np.random.randn(self.input_size, self.first_hidden_size)
-        self.hidden_hidden_weights = np.random.randn(self.first_hidden_size, self.second_hidden_size)
-        self.hidden_output_weights = np.random.randn(self.second_hidden_size, self.final_layer_size)
-        self.first_hidden_biases = np.zeros(self.first_hidden_size)
-        self.second_hidden_biases = np.zeros(self.second_hidden_size)
+        
+        # Initialize weights and biases for each hidden layer
+        for i in range(hidden_layers_nb):
+            if i == 0:
+                # Input to first hidden layer
+                self.hidden_weights.append(np.random.randn(self.input_size, self.hidden_layer_sizes[0]))
+            else:
+                # Hidden to hidden
+                self.hidden_weights.append(np.random.randn(self.hidden_layer_sizes[i - 1], self.hidden_layer_sizes[i]))
+            
+            # Biases for this hidden layer
+            self.hidden_layers_biases.append(np.zeros(self.hidden_layer_sizes[i]))
+        
+        # Last hidden layer to output
+        self.hidden_weights.append(np.random.randn(self.hidden_layer_sizes[-1], self.final_layer_size))
         self.final_layer_biases = np.zeros(self.final_layer_size)
+        # self.hidden_hidden_weights = np.random.randn(self.first_hidden_size, self.second_hidden_size)
+        # self.hidden_output_weights = np.random.randn(self.second_hidden_size, self.final_layer_size)
+        # self.first_hidden_biases = np.zeros(self.first_hidden_size)
+        # self.second_hidden_biases = np.zeros(self.second_hidden_size)
+        # self.final_layer_biases = np.zeros(self.final_layer_size)
 
     def forward(self, inputs: np.array) -> np.array:
         self.inputs = inputs
-        first_hidden_input = np.dot(inputs, self.input_hidden_weights) + self.first_hidden_biases
-        self.first_hidden_activation = self.sigmoid(first_hidden_input)
-        second_hidden_input = np.dot(self.first_hidden_activation, self.hidden_hidden_weights) + self.second_hidden_biases
-        self.second_hidden_activation = self.sigmoid(second_hidden_input)
-        final_layer_input = np.dot(self.second_hidden_activation, self.hidden_output_weights) + self.final_layer_biases
+        self.hidden_layers_activations = []
+        
+        for i in range(self.hidden_layers_nb):
+            if i == 0:
+                # First hidden layer: input -> hidden
+                layer_input = np.dot(inputs, self.hidden_weights[0]) + self.hidden_layers_biases[0]
+                self.hidden_layers_activations.append(self.sigmoid(layer_input))
+            else:
+                # Hidden -> hidden
+                layer_input = np.dot(self.hidden_layers_activations[i - 1], self.hidden_weights[i]) + self.hidden_layers_biases[i]
+                self.hidden_layers_activations.append(self.sigmoid(layer_input))
+        
+        # Final layer: last hidden -> output
+        final_layer_input = np.dot(self.hidden_layers_activations[-1], self.hidden_weights[self.hidden_layers_nb]) + self.final_layer_biases
         self.outputs = self.softmax(final_layer_input)
+        
         return self.outputs
+        # first_hidden_input = np.dot(inputs, self.input_hidden_weights) + self.first_hidden_biases
+        # self.first_hidden_activation = self.sigmoid(first_hidden_input)
+        # second_hidden_input = np.dot(self.first_hidden_activation, self.hidden_hidden_weights) + self.second_hidden_biases
+        # self.second_hidden_activation = self.sigmoid(second_hidden_input)
+        # final_layer_input = np.dot(self.second_hidden_activation, self.hidden_output_weights) + self.final_layer_biases
+        # self.outputs = self.softmax(final_layer_input)
+        # return self.outputs
 
     def retropropagate(self, outputs: np.array, expected: np.array):
-        batch_size = outputs.shape[0]
-        
         # Gradient of loss w.r.t output
         grad_output = outputs - expected
+        batch_size = self.inputs.shape[0]
         
-        # Gradient for hidden->output weights
-        grad_hidden_output = np.dot(self.second_hidden_activation.T, grad_output) / batch_size 
-        
-        # Backprop to second hidden layer
-        error_second_hidden = np.dot(grad_output, self.hidden_output_weights.T)
-        grad_second_hidden = error_second_hidden * self.sigmoid(self.second_hidden_activation, derivative=True)
-        
-        # Gradient for first_hidden->second_hidden weights
-        grad_hidden_hidden = np.dot(self.first_hidden_activation.T, grad_second_hidden) / batch_size  
-        
-        # Backprop to first hidden layer
-        error_first_hidden = np.dot(grad_second_hidden, self.hidden_hidden_weights.T)  
-        grad_first_hidden = error_first_hidden * self.sigmoid(self.first_hidden_activation, derivative=True)  
-        
-        # Gradient for input->first_hidden weights
-        grad_input_hidden = np.dot(self.inputs.T, grad_first_hidden) / batch_size
-        
-        # Update weights and biases
-        self.hidden_output_weights -= self.learning_rate * grad_hidden_output
+        # Gradient for last hidden -> output weights
+        grad_weights_output = np.dot(self.hidden_layers_activations[-1].T, grad_output) / batch_size
+        self.hidden_weights[self.hidden_layers_nb] -= self.learning_rate * grad_weights_output
         self.final_layer_biases -= self.learning_rate * np.mean(grad_output, axis=0)
-        self.hidden_hidden_weights -= self.learning_rate * grad_hidden_hidden
-        self.second_hidden_biases -= self.learning_rate * np.mean(grad_second_hidden, axis=0)
-        self.input_hidden_weights -= self.learning_rate * grad_input_hidden
-        self.first_hidden_biases -= self.learning_rate * np.mean(grad_first_hidden, axis=0)   
+        
+        # Backpropagate error to last hidden layer
+        error_hidden = np.dot(grad_output, self.hidden_weights[self.hidden_layers_nb].T)
+        grad_hidden = error_hidden * self.sigmoid(self.hidden_layers_activations[-1], derivative=True)
+        
+        # Backpropagate through all hidden layers in reverse order
+        for i in reversed(range(self.hidden_layers_nb)):
+            if i == 0:
+                # First hidden layer: input -> hidden
+                grad_weights = np.dot(self.inputs.T, grad_hidden) / batch_size
+                self.hidden_weights[0] -= self.learning_rate * grad_weights
+                self.hidden_layers_biases[0] -= self.learning_rate * np.mean(grad_hidden, axis=0)
+            else:
+                # Middle hidden layers
+                grad_weights = np.dot(self.hidden_layers_activations[i - 1].T, grad_hidden) / batch_size
+                self.hidden_weights[i] -= self.learning_rate * grad_weights
+                self.hidden_layers_biases[i] -= self.learning_rate * np.mean(grad_hidden, axis=0)
+                
+                # Backpropagate to previous layer
+                error_hidden = np.dot(grad_hidden, self.hidden_weights[i].T)
+                grad_hidden = error_hidden * self.sigmoid(self.hidden_layers_activations[i - 1], derivative=True)   
 
 
     def softmax(self, input):
