@@ -23,29 +23,29 @@ def clean_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
 if __name__ == "__main__":
     parser = ArgumentParser(prog="Preprocess data")
-    parser.add_argument("-t", "--train", help="a .csv dataset for training", required=True)
-    parser.add_argument("-v", "--valid", help="a .csv dataset for validation", required=True)
+    parser.add_argument("dataset", help="a .csv dataset for training")
+    # parser.add_argument("-v", "--valid", help="a .csv dataset for validation", required=True)
     args = parser.parse_args()
-    train_dataset: chr = args.train
-    valid_dataset: chr = args.valid
-    if (not train_dataset.endswith(".csv")) or (not valid_dataset.endswith(".csv")):
-        raise ValueError("Program expects .csv files.")
-    if (not isfile(train_dataset)):
-        raise FileNotFoundError(f"The file {train_dataset} does not exist.")
-    if (not isfile(valid_dataset)):
-        raise FileNotFoundError(f"The file {valid_dataset} does not exist.")
+    dataset: chr = args.dataset
+    # valid_dataset: chr = args.valid
+    if (not dataset.endswith(".csv")):
+        raise ValueError("Program expects .csv file.")
+    if (not isfile(dataset)):
+        raise FileNotFoundError(f"The file {dataset} does not exist.")
+    # if (not isfile(valid_dataset)):
+    #     # raise FileNotFoundError(f"The file {valid_dataset} does not exist.")
     
     scaler = StandardScaler()
-    train_df: pd.DataFrame = pd.read_csv(train_dataset, header=None)
-    valid_df: pd.DataFrame = pd.read_csv(valid_dataset, header=None)
-    train_df = clean_dataset(train_df)
-    valid_df = clean_dataset(valid_df)
+    df: pd.DataFrame = pd.read_csv(dataset, header=None)
+    # valid_df: pd.DataFrame = pd.read_csv(valid_dataset, header=None)
+    df = clean_dataset(df)
+    # valid_df = clean_dataset(valid_df)
     # print("Before scaling, training dataset:\n", train_df.head())
-    train_df = standardize_dataset(train_df, scaler)
+    df = standardize_dataset(df, scaler)
     # print("After scaling, training dataset:\n", train_df.head())
-    print('-------------------------')
+    # print('-------------------------')
     # print("Before scaling, validation dataset:\n", valid_df.head())
-    valid_df = standardize_dataset(valid_df, scaler)
+    # valid_df = standardize_dataset(valid_df, scaler)
     # print("After scaling, validation dataset:\n", valid_df.head())
-    train_df.to_csv("preprocessed_training_set.csv", index=False, header=False)
-    valid_df.to_csv("preprocessed_validation_set.csv", index=False, header=False)
+    df.to_csv(f"preprocessed_{dataset}", index=False, header=False)
+    # valid_df.to_csv("preprocessed_validation_set.csv", index=False, header=False)

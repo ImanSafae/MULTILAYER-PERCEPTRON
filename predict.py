@@ -44,11 +44,19 @@ def init_mlp(input_size, weights, biases, hidden_layers_nb=2):
     
     return mlp
 
-def parse_dataset(dataset):
-    dataset: pd.DataFrame = pd.read_csv(dataset, header=None)
-    dataset = preprocess_data(dataset)
-    expected = dataset[1]
-    dataset = dataset.drop(columns=[1])
+def parse_dataset(dataset_path, is_preprocessed=True):
+    dataset: pd.DataFrame = pd.read_csv(dataset_path, header=None)
+    
+    if is_preprocessed:
+        # Already preprocessed: first column is labels, rest are features
+        expected = dataset[0]
+        dataset = dataset.drop(columns=[0])
+    else:
+        # Raw dataset: needs preprocessing
+        dataset = preprocess_data(dataset)
+        expected = dataset[1]
+        dataset = dataset.drop(columns=[1])
+    
     return dataset, expected
 
 def interpret_proba(probas):
@@ -82,6 +90,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(prog="Predict.py", description="Prediction of a binary diagnosis")
     parser.add_argument("--dataset", help="The dataset to predict on", required=True)
     parser.add_argument("--model", help="The folder name containing the weights and biases needed", required=True)
+    parser.add_argument("--raw", help="Indicate if the dataset is raw and needs preprocessing", action="store_true")
     args = parser.parse_args()
     model = args.model
     dataset = args.dataset
@@ -96,7 +105,7 @@ if __name__ == "__main__":
     biases = []
     hidden_layers_nb = 0
     parse_weights_and_biases(model, weights, biases, hidden_layers_nb)
-    dataset, expected = parse_dataset(dataset)
+    dataset, expected = parse_dataset(dataset, is_preprocessed=not args.raw)
     # print("weights:", weights)
     # print("biases:", biases)
     mlp: MLP = init_mlp(len(dataset.columns), weights, biases)

@@ -86,8 +86,11 @@ if __name__ == "__main__":
     valid_dataset = valid_dataset.drop(columns=0).to_numpy()
 
     epochs = 300
-    mlp = MLP(30)
     expected = train_dataset[0].to_numpy()
+    inputs = train_dataset.drop(columns=0).to_numpy()
+    input_size = inputs.shape[1]
+    mlp = MLP(input_size, hidden_layers_nb=layers)
+    
     expected_onehot = pd.get_dummies(train_dataset[0], dtype=int).to_numpy()
     inputs = train_dataset.drop(columns=0).to_numpy()
     val_losses = []
