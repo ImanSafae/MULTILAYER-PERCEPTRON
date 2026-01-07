@@ -67,6 +67,9 @@ class MLP:
         for i in range(self.hidden_layers_nb):
             if i == 0:
                 # First hidden layer: input -> hidden
+                print("shape inputs:", inputs.shape)
+                print("shape weights:", self.hidden_weights[0].shape)
+                print("shape biases:", self.hidden_layers_biases[0].shape)
                 layer_input = np.dot(inputs, self.hidden_weights[0]) + self.hidden_layers_biases[0]
                 self.hidden_layers_activations.append(self.sigmoid(layer_input))
             else:
